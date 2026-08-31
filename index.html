@@ -255,8 +255,75 @@
   .modal-box p{color:var(--text-secondary); font-size:13.5px; line-height:1.6; margin:0 0 8px;}
   .modal-actions{display:flex; gap:10px; justify-content:flex-end; margin-top:20px;}
 
+  /* ---- Bottom navigation bar (KCT3-style, mobile only) ---- */
+  .bottom-nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:60;
+    max-width:920px; margin:0 auto;
+    display:none; align-items:stretch;
+    background:rgba(255,255,255,.97); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border-top:1px solid var(--border); box-shadow:var(--shadow-lg);
+    padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+  }
+  :root[data-theme="dark"] .bottom-nav{background:rgba(26,28,46,.97);}
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])) .bottom-nav{background:rgba(26,28,46,.97);}
+  }
+  .nav-item{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    padding:6px 2px; border-radius:var(--radius-sm); cursor:pointer; position:relative;
+    font-family:'Inter',sans-serif; font-size:10.5px; font-weight:600; color:var(--text-secondary);
+    background:none; border:none; -webkit-tap-highlight-color:transparent; transition:color .15s ease;
+    min-height:0;
+  }
+  .nav-item .nav-icon{
+    font-size:20px; line-height:1; width:34px; height:26px; display:flex; align-items:center; justify-content:center;
+    border-radius:10px; transition:background .15s ease, transform .15s ease;
+  }
+  .nav-item .nav-label{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;}
+  .nav-item.active{color:var(--accent);}
+  .nav-item.active .nav-icon{background:var(--neutral-bg); transform:translateY(-1px);}
+  .nav-more{position:relative;}
+  .more-menu{
+    position:absolute; bottom:calc(100% + 12px); right:-6px; min-width:190px;
+    background:var(--surface-1); border:1px solid var(--border); border-radius:14px;
+    box-shadow:var(--shadow-lg); padding:6px; z-index:70;
+    display:none; flex-direction:column; gap:2px;
+  }
+  .more-menu.open{display:flex;}
+  .more-menu-item{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:10px;
+    font-family:'Inter',sans-serif; font-size:13.5px; font-weight:600; color:var(--text-primary);
+    cursor:pointer; text-align:left; white-space:nowrap;
+  }
+  .more-menu-item .nav-icon{font-size:16px; width:auto; height:auto; background:none;}
+  .more-menu-item:hover{background:var(--paper-dark);}
+  .more-menu-item.active{background:var(--neutral-bg); color:var(--accent);}
+
+  /* ---- PIN lock screen ---- */
+  .lock-screen{
+    position:fixed; inset:0; z-index:5000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    background:linear-gradient(135deg, #3730a3 0%, var(--accent) 55%, #7c3aed 100%);
+    padding:24px;
+  }
+  .lock-screen h2{color:#fff; font-size:22px; margin:0;}
+  .lock-screen p{color:rgba(255,255,255,.85); font-size:13.5px; margin:0; text-align:center;}
+  .lock-screen input{
+    font-family:'IBM Plex Mono',monospace; font-size:26px; letter-spacing:12px; text-align:center;
+    width:220px; padding:12px; border-radius:14px; border:none; outline:none;
+  }
+  .lock-screen button{
+    background:rgba(255,255,255,.2); border:1.5px solid rgba(255,255,255,.5); color:#fff;
+    border-radius:12px; padding:12px 34px; font-size:15px; font-weight:700; cursor:pointer;
+  }
+  .lock-screen .lock-err{color:#FECACA; font-weight:700; min-height:18px; font-size:13px;}
+
   @media(max-width:640px){
-    .wrap{padding:0 14px 40px;}
+    nav.tabs{display:none;}
+    .bottom-nav{display:flex;}
+  }
+
+  @media(max-width:640px){
+    .wrap{padding:0 14px calc(84px + env(safe-area-inset-bottom));}
     .hero-banner{padding:18px 16px 20px;border-radius:0 0 20px 20px;}
     .hero-banner h1{font-size:20px;}
     .card{padding:16px;border-radius:14px;}
@@ -688,6 +755,12 @@
       <p class="settings-note" id="obCurrentNote"></p>
     </div>
 
+    <div class="card" id="pinCard" style="display:none;">
+      <h2>🔒 App Lock (PIN)</h2>
+      <p class="settings-note">PIN set karne ke baad app kholne par PIN maanga jayega — har jagah (PC, mobile, sab). Ye ek simple family-lock hai taaki koi aur aapka hisab na khole; PIN yaad rakhna zaroori hai.</p>
+      <div class="backup-actions" id="pinActions"></div>
+    </div>
+
     <div class="card">
       <h2>Backup &amp; Restore</h2>
       <p class="settings-note">Data aapke apne Supabase cloud me save hota hai — file ek baar bhejne ke baad dobara bhejne ki zarurat nahi, sab PCs par hamesha latest data khud aa jata hai. Phir bhi time-time par Export karke JSON backup safe rakhna acha rehta hai (Export dabane par data ek box me khulega, wahan se copy karke Notepad me paste-save kar lena).</p>
@@ -718,6 +791,30 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')"><span class="nav-icon">📊</span><span class="nav-label">Dashboard</span></button>
+  <button class="nav-item" data-tab="sales" onclick="switchTab('sales')"><span class="nav-icon">🛒</span><span class="nav-label">Sale</span></button>
+  <button class="nav-item" data-tab="expenses" onclick="switchTab('expenses')"><span class="nav-icon">💸</span><span class="nav-label">Expense</span></button>
+  <button class="nav-item" data-tab="ledger" onclick="switchTab('ledger')"><span class="nav-icon">🤝</span><span class="nav-label">Udhaar</span></button>
+  <button class="nav-item nav-more" id="navMore" onclick="toggleMoreMenu(event)">
+    <span class="nav-icon">⋯</span><span class="nav-label">More</span>
+    <div class="more-menu" id="more-menu">
+      <div class="more-menu-item" data-tab="stock" onclick="event.stopPropagation(); closeMoreMenu(); switchTab('stock')"><span class="nav-icon">📦</span>Stock</div>
+      <div class="more-menu-item" data-tab="bank" onclick="event.stopPropagation(); closeMoreMenu(); switchTab('bank')"><span class="nav-icon">🏦</span>Bank Balance</div>
+      <div class="more-menu-item" data-tab="othersale" onclick="event.stopPropagation(); closeMoreMenu(); switchTab('othersale')"><span class="nav-icon">🎁</span>Other Sale</div>
+      <div class="more-menu-item" data-tab="settings" onclick="event.stopPropagation(); closeMoreMenu(); switchTab('settings')"><span class="nav-icon">⚙️</span>Settings</div>
+    </div>
+  </button>
+</nav>
+
+<div class="lock-screen" id="lockScreen" style="display:none;">
+  <h2>🔒 App Locked</h2>
+  <p>PIN daal kar kholo</p>
+  <input type="password" id="lockPinInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off">
+  <div class="lock-err" id="lockErr"></div>
+  <button onclick="tryUnlock()">Kholo</button>
+</div>
 <script id="state-data" type="application/json">{"panels":[{"id":"p1","name":"PAVANI"},{"id":"p2","name":"KLAROO"},{"id":"p3","name":"CAMBU"}],"sales":[{"id":"s1","month":"2025-09","panelId":"p1","platform":"Amazon","selling":53638,"portal":7230,"orders":null,"note":""},{"id":"s2","month":"2025-09","panelId":"p1","platform":"Flipkart","selling":19730,"portal":0,"orders":null,"note":""},{"id":"s3","month":"2025-09","panelId":"p1","platform":"Meesho","selling":141918,"portal":13830,"orders":null,"note":""},{"id":"s4","month":"2025-09","panelId":"p2","platform":"Amazon","selling":2691,"portal":1080,"orders":null,"note":""},{"id":"s5","month":"2025-09","panelId":"p2","platform":"Meesho","selling":4379,"portal":252,"orders":null,"note":""},{"id":"s6","month":"2025-11","panelId":"p1","platform":"Amazon","selling":39336,"portal":8165,"orders":null,"note":""},{"id":"s7","month":"2025-11","panelId":"p1","platform":"Flipkart","selling":20700,"portal":13020,"orders":null,"note":""},{"id":"s8","month":"2025-11","panelId":"p1","platform":"Meesho","selling":17734,"portal":473,"orders":null,"note":""},{"id":"s9","month":"2025-11","panelId":"p2","platform":"Amazon","selling":5916,"portal":1345,"orders":null,"note":""},{"id":"s10","month":"2025-11","panelId":"p2","platform":"Flipkart","selling":12860,"portal":8230,"orders":null,"note":""},{"id":"s11","month":"2025-11","panelId":"p2","platform":"Meesho","selling":3920,"portal":1246,"orders":null,"note":""},{"id":"s12","month":"2025-12","panelId":"p1","platform":"Amazon","selling":51463,"portal":10922,"orders":null,"note":""},{"id":"s13","month":"2025-12","panelId":"p1","platform":"Flipkart","selling":47510,"portal":3640,"orders":null,"note":""},{"id":"s14","month":"2025-12","panelId":"p1","platform":"Meesho","selling":20382,"portal":6878,"orders":null,"note":""},{"id":"s15","month":"2025-12","panelId":"p2","platform":"Amazon","selling":8322,"portal":2158,"orders":null,"note":""},{"id":"s17","month":"2025-12","panelId":"p2","platform":"Meesho","selling":5735,"portal":2109,"orders":null,"note":""},{"id":"s18","month":"2025-12","panelId":"p3","platform":"Amazon","selling":1299,"portal":1030,"orders":null,"note":""},{"id":"s19","month":"2025-12","panelId":"p3","platform":"Flipkart","selling":8650,"portal":1150,"orders":null,"note":""},{"id":"s20","month":"2025-12","panelId":"p3","platform":"Meesho","selling":9428,"portal":1628,"orders":null,"note":""},{"id":"s21","month":"2026-01","panelId":"p1","platform":"Amazon","selling":57514,"portal":17855,"orders":null,"note":""},{"id":"s22","month":"2026-01","panelId":"p1","platform":"Flipkart","selling":29003,"portal":5490,"orders":null,"note":""},{"id":"s23","month":"2026-01","panelId":"p1","platform":"Meesho","selling":46479,"portal":11283,"orders":null,"note":""},{"id":"s24","month":"2026-01","panelId":"p2","platform":"Amazon","selling":4110,"portal":956,"orders":null,"note":""},{"id":"s25","month":"2026-01","panelId":"p2","platform":"Flipkart","selling":36400,"portal":6110,"orders":null,"note":""},{"id":"s26","month":"2026-01","panelId":"p2","platform":"Meesho","selling":1097,"portal":0,"orders":null,"note":""},{"id":"s27","month":"2026-01","panelId":"p3","platform":"Amazon","selling":899,"portal":0,"orders":null,"note":""},{"id":"s28","month":"2026-01","panelId":"p3","platform":"Flipkart","selling":8330,"portal":2630,"orders":null,"note":""},{"id":"s29","month":"2026-01","panelId":"p3","platform":"Meesho","selling":4895,"portal":627,"orders":null,"note":""},{"id":"s30","month":"2026-02","panelId":"p1","platform":"Amazon","selling":50619,"portal":13093,"orders":null,"note":""},{"id":"s31","month":"2026-02","panelId":"p1","platform":"Flipkart","selling":87170,"portal":12068,"orders":null,"note":""},{"id":"s32","month":"2026-02","panelId":"p1","platform":"Meesho","selling":14015,"portal":707,"orders":null,"note":""},{"id":"s33","month":"2026-02","panelId":"p2","platform":"Amazon","selling":16825,"portal":2042,"orders":null,"note":""},{"id":"s34","month":"2026-02","panelId":"p2","platform":"Flipkart","selling":36530,"portal":5123,"orders":null,"note":""},{"id":"s35","month":"2026-02","panelId":"p2","platform":"Meesho","selling":6222,"portal":579,"orders":null,"note":""},{"id":"s36","month":"2026-02","panelId":"p3","platform":"Amazon","selling":13887,"portal":4828,"orders":null,"note":""},{"id":"s37","month":"2026-02","panelId":"p3","platform":"Flipkart","selling":2230,"portal":1202,"orders":null,"note":""},{"id":"s38","month":"2026-02","panelId":"p3","platform":"Meesho","selling":10088,"portal":2442,"orders":null,"note":""},{"id":"s39","month":"2026-03","panelId":"p1","platform":"Amazon","selling":54536,"portal":13262,"orders":null,"note":""},{"id":"s40","month":"2026-03","panelId":"p1","platform":"Flipkart","selling":78610,"portal":9229,"orders":null,"note":""},{"id":"s41","month":"2026-03","panelId":"p1","platform":"Meesho","selling":4636,"portal":1347,"orders":null,"note":""},{"id":"s42","month":"2026-03","panelId":"p2","platform":"Amazon","selling":14132,"portal":5786,"orders":null,"note":""},{"id":"s43","month":"2026-03","panelId":"p2","platform":"Flipkart","selling":20007,"portal":4022,"orders":null,"note":""},{"id":"s44","month":"2026-03","panelId":"p2","platform":"Meesho","selling":1291,"portal":947,"orders":null,"note":""},{"id":"s45","month":"2026-03","panelId":"p3","platform":"Amazon","selling":16488,"portal":4240,"orders":null,"note":""},{"id":"s46","month":"2026-03","panelId":"p3","platform":"Flipkart","selling":9500,"portal":1258,"orders":null,"note":""},{"id":"s47","month":"2026-03","panelId":"p3","platform":"Meesho","selling":16971,"portal":5335,"orders":null,"note":""},{"id":"s48","month":"2026-04","panelId":"p1","platform":"Amazon","selling":73293,"portal":20970,"orders":null,"note":""},{"id":"s49","month":"2026-04","panelId":"p1","platform":"Flipkart","selling":102000,"portal":11652,"orders":null,"note":""},{"id":"s50","month":"2026-04","panelId":"p1","platform":"Meesho","selling":4216,"portal":803,"orders":null,"note":""},{"id":"s51","month":"2026-04","panelId":"p2","platform":"Amazon","selling":19351,"portal":6532,"orders":null,"note":""},{"id":"s52","month":"2026-04","panelId":"p2","platform":"Flipkart","selling":19650,"portal":8660,"orders":null,"note":""},{"id":"s53","month":"2026-04","panelId":"p2","platform":"Meesho","selling":752,"portal":249,"orders":null,"note":""},{"id":"s54","month":"2026-04","panelId":"p3","platform":"Amazon","selling":4098,"portal":2895,"orders":null,"note":""},{"id":"s55","month":"2026-04","panelId":"p3","platform":"Flipkart","selling":6760,"portal":1886,"orders":null,"note":""},{"id":"s56","month":"2026-04","panelId":"p3","platform":"Meesho","selling":13969,"portal":3514,"orders":null,"note":""},{"id":"s57","month":"2026-05","panelId":"p1","platform":"Amazon","selling":39084,"portal":13563,"orders":null,"note":""},{"id":"s58","month":"2026-05","panelId":"p1","platform":"Flipkart","selling":60190,"portal":9312,"orders":null,"note":""},{"id":"s59","month":"2026-05","panelId":"p1","platform":"Meesho","selling":4430,"portal":942,"orders":null,"note":""},{"id":"s60","month":"2026-05","panelId":"p2","platform":"Amazon","selling":15778,"portal":6057,"orders":null,"note":""},{"id":"s61","month":"2026-05","panelId":"p2","platform":"Flipkart","selling":18530,"portal":5650,"orders":null,"note":""},{"id":"s62","month":"2026-05","panelId":"p2","platform":"Meesho","selling":290,"portal":219,"orders":null,"note":""},{"id":"s63","month":"2026-05","panelId":"p3","platform":"Amazon","selling":7543,"portal":1116,"orders":null,"note":""},{"id":"s64","month":"2026-05","panelId":"p3","platform":"Flipkart","selling":7370,"portal":3808,"orders":null,"note":""},{"id":"s65","month":"2026-05","panelId":"p3","platform":"Meesho","selling":6936,"portal":2119,"orders":null,"note":""},{"id":"s66","month":"2026-06","panelId":"p1","platform":"Amazon","selling":73141,"portal":22529,"orders":null,"note":""},{"id":"s67","month":"2026-06","panelId":"p1","platform":"Flipkart","selling":76450,"portal":16403,"orders":null,"note":""},{"id":"s68","month":"2026-06","panelId":"p1","platform":"Meesho","selling":1937,"portal":0,"orders":null,"note":""},{"id":"s69","month":"2026-06","panelId":"p2","platform":"Amazon","selling":19739,"portal":7496,"orders":null,"note":""},{"id":"s70","month":"2026-06","panelId":"p2","platform":"Flipkart","selling":23700,"portal":8077,"orders":null,"note":""},{"id":"s71","month":"2026-06","panelId":"p2","platform":"Meesho","selling":1201,"portal":0,"orders":null,"note":""},{"id":"s72","month":"2026-06","panelId":"p3","platform":"Amazon","selling":20389,"portal":6867,"orders":null,"note":""},{"id":"s73","month":"2026-06","panelId":"p3","platform":"Flipkart","selling":3570,"portal":1427,"orders":null,"note":""},{"id":"s74","month":"2026-06","panelId":"p3","platform":"Meesho","selling":34032,"portal":4545,"orders":null,"note":""},{"id":"s16","month":"2025-12","panelId":"p2","platform":"Flipkart","selling":34320,"portal":5540,"orders":null,"note":""},{"id":"s75","month":"2026-07","panelId":"p1","platform":"Amazon","selling":89639,"portal":16672,"orders":null,"note":""},{"id":"s76","month":"2026-07","panelId":"p1","platform":"Flipkart","selling":72270,"portal":12452,"orders":null,"note":""},{"id":"s77","month":"2026-07","panelId":"p2","platform":"Amazon","selling":25212,"portal":5942,"orders":null,"note":""},{"id":"s78","month":"2026-07","panelId":"p2","platform":"Flipkart","selling":33310,"portal":3513,"orders":null,"note":""},{"id":"s79","month":"2026-07","panelId":"p2","platform":"Meesho","selling":8402,"portal":1655,"orders":null,"note":""},{"id":"s80","month":"2026-07","panelId":"p3","platform":"Amazon","selling":14689,"portal":3370,"orders":null,"note":""},{"id":"s81","month":"2026-07","panelId":"p3","platform":"Flipkart","selling":6290,"portal":1820,"orders":null,"note":""},{"id":"s82","month":"2026-07","panelId":"p3","platform":"Meesho","selling":39573,"portal":6987,"orders":null,"note":""}],"expenses":[{"id":"e1","direction":"out","date":"2025-11-28","category":"Fixed Asset","source":"Cash","panelId":null,"amount":103179,"detail":"Old Office Expense (PC, table, etc.) up to 28-11-2025 — fixed asset, Company Balance sheet se"},{"id":"l9","direction":"out","date":"2025-11-28","category":"Upad / Personal","source":"Bank","panelId":null,"amount":71794,"detail":"Upad: Bhavesh"},{"id":"l10","direction":"out","date":"2025-12-31","category":"Upad / Personal","source":"Bank","panelId":null,"amount":18000,"detail":"Upad: Bhavesh"},{"id":"l11","direction":"out","date":"2026-01-31","category":"Upad / Personal","source":"Bank","panelId":null,"amount":24350,"detail":"Upad: Bhavesh"},{"id":"l12","direction":"out","date":"2026-02-28","category":"Upad / Personal","source":"Bank","panelId":null,"amount":18500,"detail":"Upad: Bhavesh"},{"id":"l13","direction":"out","date":"2026-03-31","category":"Upad / Personal","source":"Bank","panelId":null,"amount":40500,"detail":"Upad: Bhavesh"},{"id":"l14","direction":"out","date":"2026-04-30","category":"Upad / Personal","source":"Bank","panelId":null,"amount":30000,"detail":"Upad: Bhavesh"},{"id":"l15","direction":"out","date":"2026-05-31","category":"Upad / Personal","source":"Bank","panelId":null,"amount":35000,"detail":"Upad: Bhavesh"},{"id":"idvzg0y1axmt5apdmo","direction":"out","date":"2026-08-03","category":"Upad / Personal","source":"Bank","panelId":"p1","amount":10000,"detail":"Personal"},{"id":"id4uf2nr1bmt5aq8kr","direction":"out","date":"2026-08-09","category":"Upad / Personal","source":"Bank","panelId":"p1","amount":1000,"detail":"Personal"},{"id":"idi4iajbybmt5axbag","direction":"out","date":"2026-08-16","category":"Upad / Personal","source":"Bank","panelId":"p1","amount":10000,"detail":"Personal Ane Tv Na 7000 1St Hapto"},{"id":"l16","direction":"out","date":"2026-06-30","category":"Upad / Personal","source":"Bank","panelId":null,"amount":31000,"detail":"Upad: Bhavesh"},{"id":"l17","direction":"out","date":"2026-07-31","category":"Upad / Personal","source":"Bank","panelId":null,"amount":17000,"detail":"Upad: Bhavesh"},{"id":"idjtfsq84rmsiukhbr","direction":"out","date":"2026-08-07","category":"Office Expense","source":"Bank","panelId":"p2","amount":5600,"detail":"CA Bill Pay Last Year 25-26"},{"id":"idnnmp5k8fmsiullcj","direction":"out","date":"2026-08-07","category":"Office Expense","source":"Bank","panelId":"p3","amount":4400,"detail":"CA Bill Pay Last Year 25-26"},{"id":"id3bgg24i9mt1htyxx","direction":"out","date":"2026-08-20","category":"Office Expense","source":"Bank","panelId":"p1","amount":350,"detail":"2 PORT USB SWITCH FOR DATA CABLE"},{"id":"ide8ktoxqbmt2h36iu","direction":"out","date":"2026-08-21","category":"Office Expense","source":"Cash","panelId":null,"amount":950,"detail":"MCB And Wayer"},{"id":"idens1882hmt2h4jnc","direction":"out","date":"2026-08-13","category":"Office Expense","source":"Cash","panelId":null,"amount":1870,"detail":"Sticker,Carbon Tape,Chilli Cutter"},{"id":"idats7g9wrmt2h4xmh","direction":"out","date":"2026-08-21","category":"Office Expense","source":"Cash","panelId":null,"amount":1000,"detail":"Safai 1-7-26 na"},{"id":"ide7xim1o0mt2sl36c","direction":"out","date":"2026-08-21","category":"Office Expense","source":"Bank","panelId":"p2","amount":3812,"detail":"Flipkart Bag Ane 4x6 Printer Roll"},{"id":"idqzoukm97mt5apr5z","direction":"out","date":"2026-08-04","category":"Upad / Personal","source":"Bank","panelId":"p1","amount":1000,"detail":"Personal"},{"id":"idhoxstoq9mt5bixzo","direction":"out","date":"2026-08-23","category":"Office Expense","source":"Bank","panelId":"p1","amount":12000,"detail":"Personal"},{"id":"idou1gdxy8mth6cc06","direction":"in","date":"2026-08-31","category":"Withdrawal from Bank","source":"Cash","panelId":null,"amount":30000,"detail":"OFFICE PAYMENT 189955 hatu and 200000 Jama Karavya"},{"id":"idhpou755pmth6cy4x","direction":"in","date":"2026-08-31","category":"Withdrawal from Bank","source":"Cash","panelId":"p2","amount":65000,"detail":"OFFICE PAYMENT 189955 hatu and 200000 Jama Karavya"},{"id":"id54iru1j2mth6die7","direction":"in","date":"2026-08-31","category":"Withdrawal from Bank","source":"Cash","panelId":"p3","amount":65000,"detail":"OFFICE PAYMENT 189955 hatu and 200000 Jama Karavya"}],"stock":[{"id":"st4","month":"2026-04","value":166449,"cash":2200,"note":"Company Balance sheet se"},{"id":"st5","month":"2026-05","value":237144,"cash":500,"note":"Company Balance sheet se"},{"id":"st6","month":"2026-06","value":201430,"cash":1120,"note":"Company Balance sheet se"},{"id":"st7","month":"2026-07","value":295421,"cash":4094,"note":"Company Balance sheet se"},{"id":"st1","month":"2026-01","value":103765,"cash":11346,"note":"Company Balance sheet se"},{"id":"st2","month":"2026-02","value":97284,"cash":4200,"note":"Company Balance sheet se"},{"id":"st3","month":"2026-03","value":146433,"cash":13500,"note":"Company Balance sheet se"}],"bankBalance":[{"id":"bb1","month":"2025-09","panelId":"p1","value":35290},{"id":"bb2","month":"2025-09","panelId":"p2","value":1210},{"id":"bb3","month":"2025-09","panelId":"p3","value":0},{"id":"bb4","month":"2025-11","panelId":"p1","value":35290},{"id":"bb5","month":"2025-11","panelId":"p2","value":1210},{"id":"bb6","month":"2025-11","panelId":"p3","value":0},{"id":"bb7","month":"2025-12","panelId":"p1","value":59543},{"id":"bb8","month":"2025-12","panelId":"p2","value":64921},{"id":"bb9","month":"2025-12","panelId":"p3","value":7791},{"id":"bb10","month":"2026-01","panelId":"p1","value":47521},{"id":"bb11","month":"2026-01","panelId":"p2","value":93003},{"id":"bb12","month":"2026-01","panelId":"p3","value":15500},{"id":"bb13","month":"2026-02","panelId":"p1","value":33207},{"id":"bb14","month":"2026-02","panelId":"p2","value":117435},{"id":"bb15","month":"2026-02","panelId":"p3","value":70653},{"id":"bb16","month":"2026-03","panelId":"p1","value":34979},{"id":"bb17","month":"2026-03","panelId":"p2","value":134811},{"id":"bb18","month":"2026-03","panelId":"p3","value":93382},{"id":"bb19","month":"2026-04","panelId":"p1","value":105758},{"id":"bb20","month":"2026-04","panelId":"p2","value":48157},{"id":"bb21","month":"2026-04","panelId":"p3","value":109649},{"id":"bb22","month":"2026-05","panelId":"p1","value":97433},{"id":"bb23","month":"2026-05","panelId":"p2","value":63604},{"id":"bb24","month":"2026-05","panelId":"p3","value":119367},{"id":"bb25","month":"2026-06","panelId":"p1","value":67367},{"id":"bb26","month":"2026-06","panelId":"p2","value":44590},{"id":"bb27","month":"2026-06","panelId":"p3","value":51213},{"id":"bb28","month":"2026-07","panelId":"p1","value":133324},{"id":"bb29","month":"2026-07","panelId":"p2","value":89529},{"id":"bb30","month":"2026-07","panelId":"p3","value":77773}],"ledger":[{"id":"l3","type":"Devana","direction":"add","date":"2026-07-31","person":"Sandip Office","amount":108170,"note":""},{"id":"l4","type":"Levana","direction":"add","date":"2025-01-12","person":"Office Deposit","amount":10000,"note":""},{"id":"l5","type":"Levana","direction":"add","date":"2025-07-18","person":"Monika Na Saving A/C Ma","amount":12000,"note":""},{"id":"l6","type":"Levana","direction":"add","date":"2026-06-30","person":"Kushal","amount":14036,"note":""},{"id":"l7","type":"Levana","direction":"add","date":"2026-01-04","person":"Nimesh","amount":4250,"note":""},{"id":"l8","type":"Levana","direction":"add","date":"2026-07-31","person":"Sandip Office","amount":15600,"note":""},{"id":"l1","type":"Investment","direction":"add","date":"2026-01-04","person":"Pappa","amount":250000,"note":"Company Balance sheet, latest block se"},{"id":"idgzomptxvmtgyg1rb","type":"Devana","direction":"add","date":"2026-08-31","person":"Sandip Office","amount":17925,"note":"Office Payment"},{"id":"idue8r8dpkmtgyha1t","type":"Devana","direction":"add","date":"2026-08-06","person":"Sandip Office","amount":30400,"note":"logo vavle cap"},{"id":"idd5vm6m1hmtgyhu0l","type":"Devana","direction":"add","date":"2026-08-29","person":"Sandip Office","amount":33460,"note":"LOGO VAVLE CAP"}],"openingBalance":{"month":"2026-06","value":495715},"cashBook":[]}</script>
 
 <script>
@@ -950,6 +1047,7 @@ function normalizeState(){
   if(!state.cashBook) state.cashBook = [];
   if(!state.otherSales) state.otherSales = [];
   if(!state.deletedHistory) state.deletedHistory = [];
+  if(state.appPin === undefined) state.appPin = null;
   if(!state.panels) state.panels = [];
   if(state.openingBalance === undefined) state.openingBalance = null;
   // Purane version (payment field) se migration — data loss na ho
@@ -1007,6 +1105,7 @@ let lastCloudUpdatedAt = null;
 
 function saveState(){
   try{ localStorage.setItem('salesTrackerCloudBackup', JSON.stringify(state)); }catch(e){}
+  try{ localStorage.setItem('stHasPin', state.appPin ? '1' : '0'); }catch(e){}
   __dirty = true;
   setBadge('⏳ Saving...', 'syncing');
   clearTimeout(__saveTimer);
@@ -1031,6 +1130,127 @@ async function pushToCloud(){
 function rerenderAll(){
   renderDashboard(); renderSalesTab(); renderExpensesTab(); renderStockTab();
   renderBankTab(); renderLedgerTab(); renderOtherSaleTab(); renderSettings();
+}
+
+/* ---------- BOTTOM NAV (mobile) ---------- */
+function toggleMoreMenu(e){
+  e.stopPropagation();
+  document.getElementById('more-menu')?.classList.toggle('open');
+}
+function closeMoreMenu(){
+  document.getElementById('more-menu')?.classList.remove('open');
+}
+document.addEventListener('click', (e)=>{
+  const menu = document.getElementById('more-menu');
+  if(menu && menu.classList.contains('open') && !e.target.closest('.nav-more')) menu.classList.remove('open');
+});
+
+/* ---------- APP LOCK (PIN) ---------- */
+// Simple family-lock: PIN ka SHA-256 hash cloud state me rehta hai, isliye
+// sab devices par same PIN lagta hai. Ye casual protection hai (technical
+// aadmi bypass kar sakta hai), lekin ghar/office me app kholne se rokta hai.
+const ENABLE_PIN = true;
+
+async function sha256hex(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function maybeLock(){
+  let hasPin = !!(state && state.appPin && state.appPin.hash);
+  if(!hasPin){
+    try{ hasPin = localStorage.getItem('stHasPin') === '1'; }catch(e){}
+  }
+  let unlocked = false;
+  try{ unlocked = sessionStorage.getItem('stUnlocked') === '1'; }catch(e){}
+  const scr = document.getElementById('lockScreen');
+  if(scr){
+    scr.style.display = (hasPin && !unlocked) ? 'flex' : 'none';
+    if(hasPin && !unlocked){ setTimeout(()=>document.getElementById('lockPinInput')?.focus(), 100); }
+  }
+}
+
+async function tryUnlock(){
+  const inp = document.getElementById('lockPinInput');
+  const err = document.getElementById('lockErr');
+  const pin = (inp.value || '').trim();
+  if(!pin){ err.textContent = 'PIN daalo'; return; }
+  // Agar cloud state abhi tak nahi aayi (offline), to hash compare nahi ho sakta
+  if(!(state && state.appPin && state.appPin.hash)){
+    err.textContent = 'Data load ho raha hai — 2 second baad dobara try karo';
+    return;
+  }
+  const h = await sha256hex(pin);
+  if(h === state.appPin.hash){
+    try{ sessionStorage.setItem('stUnlocked', '1'); }catch(e){}
+    inp.value = '';
+    err.textContent = '';
+    document.getElementById('lockScreen').style.display = 'none';
+  } else {
+    err.textContent = 'Galat PIN — dobara try karo';
+    inp.value = '';
+    inp.focus();
+  }
+}
+document.addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && document.getElementById('lockScreen')?.style.display === 'flex') tryUnlock();
+});
+
+function renderPinCard(){
+  const card = document.getElementById('pinCard');
+  const actions = document.getElementById('pinActions');
+  if(!card || !actions) return;
+  if(!ENABLE_PIN){ card.style.display = 'none'; return; }
+  card.style.display = '';
+  if(state.appPin && state.appPin.hash){
+    actions.innerHTML = '<button class="secondary" onclick="changePin()">PIN Badlo</button>' +
+      '<button class="danger" style="padding:10px 16px;font-size:13.5px;min-height:40px;" onclick="removePin()">PIN Hatao</button>';
+  } else {
+    actions.innerHTML = '<button class="secondary" onclick="setPin()">🔒 PIN Set Karo</button>';
+  }
+}
+
+function setPin(){
+  showPromptModal({
+    title: 'Naya PIN Set Karo',
+    body: '4-6 digit ka PIN daalo (yaad rakhna — bhoolne par main hi hata sakta hoon):',
+    defaultValue: '',
+    confirmLabel: 'Set Karo',
+    onConfirm: async (value) => {
+      const pin = (value || '').trim();
+      if(!/^[0-9]{4,6}$/.test(pin)){ toast('PIN sirf 4-6 digits ka hona chahiye.'); return; }
+      state.appPin = { hash: await sha256hex(pin) };
+      try{ sessionStorage.setItem('stUnlocked', '1'); }catch(e){}
+      saveState();
+      renderPinCard();
+      toast('PIN set ho gaya — ab app kholne par PIN lagega.');
+    }
+  });
+}
+
+function changePin(){
+  showPromptModal({
+    title: 'Purana PIN', body: 'Pehle abhi wala PIN daalo:', defaultValue: '', confirmLabel: 'Aage',
+    onConfirm: async (value) => {
+      const h = await sha256hex((value || '').trim());
+      if(h !== state.appPin.hash){ toast('Galat PIN.'); return; }
+      setPin();
+    }
+  });
+}
+
+function removePin(){
+  showPromptModal({
+    title: 'PIN Hatao', body: 'Abhi wala PIN daalo confirm karne ke liye:', defaultValue: '', confirmLabel: 'Hatao',
+    onConfirm: async (value) => {
+      const h = await sha256hex((value || '').trim());
+      if(h !== state.appPin.hash){ toast('Galat PIN.'); return; }
+      state.appPin = null;
+      saveState();
+      renderPinCard();
+      toast('PIN hat gaya — ab app bina PIN ke khulegi.');
+    }
+  });
 }
 
 /* ---------- DELETE HISTORY (recycle bin) ---------- */
@@ -1226,6 +1446,13 @@ function toggleTheme(){
 function switchTab(tab){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
   document.querySelectorAll('.tabpanel').forEach(p=>p.classList.toggle('active', p.id === 'tab-'+tab));
+  // bottom-nav (mobile) highlight — "More" tab active jab secondary tab khula ho
+  const secondaryTabs = ['stock','bank','othersale','settings'];
+  document.querySelectorAll('.bottom-nav .nav-item[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  document.querySelectorAll('.more-menu-item[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+  const more = document.getElementById('navMore');
+  if(more) more.classList.toggle('active', secondaryTabs.includes(tab));
+  window.scrollTo({top:0});
   if(tab==='dashboard') renderDashboard();
   if(tab==='sales') renderSalesTab();
   if(tab==='expenses') renderExpensesTab();
@@ -2453,6 +2680,7 @@ function renderSettings(){
   }
   renderOpeningBalance();
   renderDeleteHistory();
+  renderPinCard();
 }
 
 function renderOpeningBalance(){
@@ -2622,6 +2850,7 @@ function clearAllData(){
 // Pehle embedded/local data se turant render (blank screen na dikhe),
 // phir cloud se latest data fetch karke us par switch.
 renderDashboard();
+maybeLock();
 (async function initCloud(){
   setBadge('⏳ Loading...', 'syncing');
   try{
@@ -2631,7 +2860,9 @@ renderDashboard();
       normalizeState();
       lastCloudUpdatedAt = row.updated_at;
       try{ localStorage.setItem('salesTrackerCloudBackup', JSON.stringify(state)); }catch(e){}
+      try{ localStorage.setItem('stHasPin', state.appPin ? '1' : '0'); }catch(e){}
       rerenderAll();
+      maybeLock();
       setBadge('☁️ Live', 'synced');
     } else {
       // Cloud abhi khali hai — is file ka embedded data pehli baar upload karo.
